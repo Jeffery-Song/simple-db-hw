@@ -112,4 +112,8 @@ public class StringField implements Field {
 
 		return Type.STRING_TYPE;
 	}
+
+	public Field clone() {
+		return new StringField(value, maxSize);
+	}
 }

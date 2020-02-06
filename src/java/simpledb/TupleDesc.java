@@ -8,6 +8,10 @@ import java.util.*;
  */
 public class TupleDesc implements Serializable {
 
+    private static String ANONYMOUS_FIELD = "ANONYMOUS_FIELD";
+
+    private TDItem itemlist[];
+
     /**
      * A help class to facilitate organizing the information of each field
      * */
@@ -29,12 +33,31 @@ public class TupleDesc implements Serializable {
             this.fieldName = n;
             this.fieldType = t;
         }
+        public TDItem(TDItem item) {
+            this.fieldName = item.fieldName;
+            this.fieldType = item.fieldType;
+        }
 
         public String toString() {
             return fieldName + "(" + fieldType + ")";
         }
     }
 
+    private class TupleDescIterator implements Iterator<TDItem> {
+        private int idx;
+        private TupleDesc td;
+        public TupleDescIterator(TupleDesc td) {
+            this.td = td;
+            idx = 0;
+        }
+        public boolean hasNext() {
+            return idx < td.itemlist.length;
+        }
+        public TDItem next() {
+            idx+=1;
+            return td.itemlist[idx-1];
+        }
+    };
     /**
      * @return
      *        An iterator which iterates over all the field TDItems
@@ -42,7 +65,7 @@ public class TupleDesc implements Serializable {
      * */
     public Iterator<TDItem> iterator() {
         // some code goes here
-        return null;
+        return new TupleDescIterator(this);
     }
 
     private static final long serialVersionUID = 1L;
@@ -60,6 +83,15 @@ public class TupleDesc implements Serializable {
      */
     public TupleDesc(Type[] typeAr, String[] fieldAr) {
         // some code goes here
+        assert(typeAr.length > 0);
+        assert(typeAr.length == fieldAr.length);
+        itemlist = new TDItem[typeAr.length];
+        for(int i = 0; i < typeAr.length; i++) {
+            itemlist[i] = new TDItem(typeAr[i], fieldAr[i]);
+        }
+    }
+    public TupleDesc() {
+        itemlist = null;
     }
 
     /**
@@ -72,6 +104,18 @@ public class TupleDesc implements Serializable {
      */
     public TupleDesc(Type[] typeAr) {
         // some code goes here
+        assert(typeAr.length > 0);
+        itemlist = new TDItem[typeAr.length];
+        for(int i = 0; i < typeAr.length; i++) {
+            itemlist[i] = new TDItem(typeAr[i], ANONYMOUS_FIELD);
+        }
+    }
+
+    public TupleDesc(TupleDesc tdin) {
+        itemlist = new TDItem[tdin.numFields()];
+        for(int i = 0; i < itemlist.length; i++) {
+            itemlist[i] = new TDItem(tdin.itemlist[i]);
+        }
     }
 
     /**
@@ -79,7 +123,7 @@ public class TupleDesc implements Serializable {
      */
     public int numFields() {
         // some code goes here
-        return 0;
+        return itemlist.length;
     }
 
     /**
@@ -93,7 +137,8 @@ public class TupleDesc implements Serializable {
      */
     public String getFieldName(int i) throws NoSuchElementException {
         // some code goes here
-        return null;
+        if (i >= numFields() || i < 0) throw new NoSuchElementException();
+        return itemlist[i].fieldName;
     }
 
     /**
@@ -108,7 +153,8 @@ public class TupleDesc implements Serializable {
      */
     public Type getFieldType(int i) throws NoSuchElementException {
         // some code goes here
-        return null;
+        if (i >= numFields() || i < 0) throw new NoSuchElementException();
+        return itemlist[i].fieldType;
     }
 
     /**
@@ -122,7 +168,10 @@ public class TupleDesc implements Serializable {
      */
     public int fieldNameToIndex(String name) throws NoSuchElementException {
         // some code goes here
-        return 0;
+        for (int i = 0; i < numFields(); i++) {
+            if (itemlist[i].fieldName.equals(name)) return i;
+        }
+        throw new NoSuchElementException();
     }
 
     /**
@@ -131,7 +180,11 @@ public class TupleDesc implements Serializable {
      */
     public int getSize() {
         // some code goes here
-        return 0;
+        int size=0;
+        for (int i = 0; i < numFields(); i++) {
+            size += itemlist[i].fieldType.getLen();
+        }
+        return size;
     }
 
     /**
@@ -146,7 +199,15 @@ public class TupleDesc implements Serializable {
      */
     public static TupleDesc merge(TupleDesc td1, TupleDesc td2) {
         // some code goes here
-        return null;
+        TupleDesc td3 = new TupleDesc();
+        td3.itemlist = new TDItem[td1.numFields() + td2.numFields()];
+        for (int i = 0; i < td1.numFields(); i++) {
+            td3.itemlist[i] = new TDItem(td1.itemlist[i]);
+        }
+        for (int i = 0; i < td2.numFields(); i++) {
+            td3.itemlist[i + td1.numFields()] = new TDItem(td2.itemlist[i]);
+        }
+        return td3;
     }
 
     /**
@@ -162,7 +223,20 @@ public class TupleDesc implements Serializable {
 
     public boolean equals(Object o) {
         // some code goes here
-        return false;
+        // only checks type, not name?
+        if (!(o instanceof TupleDesc)) {
+            return false;
+        }
+        TupleDesc td = (TupleDesc)o;
+        if (numFields() != td.numFields()) {
+            return false;
+        }
+        for (int i = 0; i < numFields(); i++) {
+            if (getFieldType(i) != td.getFieldType(i)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public int hashCode() {
@@ -180,6 +254,10 @@ public class TupleDesc implements Serializable {
      */
     public String toString() {
         // some code goes here
-        return "";
+        String desc = "";
+        for (TDItem item: itemlist) {
+            desc += item.fieldType.toString() + "(" + item.fieldName + "),";
+        }
+        return desc;
     }
 }

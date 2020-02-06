@@ -23,6 +23,10 @@ public enum Type implements Serializable {
                 throw new ParseException("couldn't parse", 0);
             }
         }
+        @Override
+        public String toString() {
+            return "INT";
+        }
 
     }, STRING_TYPE() {
         @Override
@@ -42,6 +46,10 @@ public enum Type implements Serializable {
                 throw new ParseException("couldn't parse", 0);
             }
         }
+        @Override
+        public String toString() {
+            return "STRING";
+        }
     };
     
     public static final int STRING_LEN = 128;
@@ -60,4 +68,5 @@ public enum Type implements Serializable {
    */
     public abstract Field parse(DataInputStream dis) throws ParseException;
 
+    public abstract String toString();
 }
