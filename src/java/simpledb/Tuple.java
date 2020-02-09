@@ -110,29 +110,13 @@ public class Tuple implements Serializable {
         return s;
     }
 
-
-    private class TupleIterator implements Iterator<Field> {
-        private int idx;
-        private Tuple tp;
-        public TupleIterator(Tuple tp) {
-            this.tp = tp;
-            idx = 0;
-        }
-        public boolean hasNext() {
-            return idx < tp.fieldList.length;
-        }
-        public Field next() {
-            idx+=1;
-            return tp.fieldList[idx-1];
-        }
-    };
     /**
      * @return
      *        An iterator which iterates over all the fields of this tuple
      * */
     public Iterator<Field> fields()
     {
-        return new TupleIterator(this);
+        return Arrays.asList(fieldList).iterator();
         // some code goes here
     }
 

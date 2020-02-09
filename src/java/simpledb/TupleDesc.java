@@ -43,21 +43,6 @@ public class TupleDesc implements Serializable {
         }
     }
 
-    private class TupleDescIterator implements Iterator<TDItem> {
-        private int idx;
-        private TupleDesc td;
-        public TupleDescIterator(TupleDesc td) {
-            this.td = td;
-            idx = 0;
-        }
-        public boolean hasNext() {
-            return idx < td.itemlist.length;
-        }
-        public TDItem next() {
-            idx+=1;
-            return td.itemlist[idx-1];
-        }
-    };
     /**
      * @return
      *        An iterator which iterates over all the field TDItems
@@ -65,7 +50,7 @@ public class TupleDesc implements Serializable {
      * */
     public Iterator<TDItem> iterator() {
         // some code goes here
-        return new TupleDescIterator(this);
+        return Arrays.asList(itemlist).iterator();
     }
 
     private static final long serialVersionUID = 1L;
