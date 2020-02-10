@@ -316,7 +316,9 @@ public class HeapPage implements Page {
             this.hp = hp;
         }
         public boolean hasNext() {
-            if (i < hp.numSlots && hp.isSlotUsed(i)) return true;
+            for (; i < numSlots; i++) {
+                if (hp.isSlotUsed(i)) return true;
+            }
             return false;
         }
         public Tuple next() {

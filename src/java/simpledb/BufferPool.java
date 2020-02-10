@@ -79,7 +79,9 @@ public class BufferPool {
         if (bufedPage.size() == numPages) {
             throw new DbException("Eviction is not implemented");
         }
-        throw new DbException("Page allocation is not implemented");
+        page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
+        bufedPage.put(pid, page);
+        return page;
     }
 
     /**
