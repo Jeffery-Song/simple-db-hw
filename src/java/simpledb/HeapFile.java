@@ -82,10 +82,11 @@ public class HeapFile implements DbFile {
         }
         HeapPage hp = null;
         try {
-            FileInputStream fis = new FileInputStream(f);
+            RandomAccessFile ras = new RandomAccessFile(f, "r");
+            ras.seek(pgNo * BufferPool.getPageSize());
             byte data[] = new byte[BufferPool.getPageSize()];
-            fis.read(data, pgNo * BufferPool.getPageSize(), BufferPool.getPageSize());
-            fis.close();
+            ras.read(data);
+            ras.close();
             hp = new HeapPage((HeapPageId)pid, data);
         } catch (IOException e) {
             assert(false);
@@ -129,20 +130,15 @@ public class HeapFile implements DbFile {
         Iterator<Tuple> tpIterator = null;
         public void open() throws DbException, TransactionAbortedException {
             countPg = numPages();
-            Debug.log("countPg is " + countPg + "\n");
-            // System.err.println("countPg is " + countPg + "\n");
-            // System.err.flush();
             if (countPg == 0) return;
             currentPage = (HeapPage)(Database.getBufferPool().getPage(null, new HeapPageId(getId(), 0), null));
             tpIterator = currentPage.iterator();
         }
         public boolean hasNext() throws DbException, TransactionAbortedException {
-            Debug.log("countPg is " + countPg + "\n");
             if (currentPage == null) return false;
             if (tpIterator.hasNext()) return true;
             currentPgNo++;
             for (; currentPgNo < countPg; currentPgNo++) {
-                if (currentPgNo > 0) throw new DbException("currentPgNo is " + currentPgNo);
                 currentPage = (HeapPage)(Database.getBufferPool().getPage(null, new HeapPageId(getId(), currentPgNo), null));
 
                 tpIterator = currentPage.iterator();
@@ -151,7 +147,7 @@ public class HeapFile implements DbFile {
             return false;
         }
         public Tuple next() throws DbException, TransactionAbortedException {
-            if (tpIterator == null) throw new NoSuchElementException("");
+            if (tpIterator == null) throw new NoSuchElementException();
             return tpIterator.next();
         }
         public void rewind() throws DbException, TransactionAbortedException {
