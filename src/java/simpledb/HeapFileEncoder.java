@@ -129,14 +129,14 @@ public class HeapFileEncoder {
         if (c == '\r')
             continue;
 
-        if (c == '\n') {
+        if (c == '\n' || c == -1) {
             if (first)
                 continue;
             recordcount++;
             first = true;
         } else
             first = false;
-        if (c == fieldSeparator || c == '\n' || c == '\r') {
+        if (c == fieldSeparator || c == '\n' || c == '\r' || c == -1) {
             String s = new String(buf, 0, curpos);
             if (typeAr[fieldNo] == Type.INT_TYPE) {
                 try {
@@ -158,14 +158,11 @@ public class HeapFileEncoder {
                     pageStream.write((byte)0);
             }
             curpos = 0;
-            if (c == '\n')
+            if (c == '\n' || c == -1)
                 fieldNo = 0;
             else
                 fieldNo++;
-            
-        } else if (c == -1) {
-            done = true;
-            
+            if (c == -1) done = true;
         } else {
             buf[curpos++] = (char)c;
             continue;
