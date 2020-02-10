@@ -311,20 +311,16 @@ public class HeapPage implements Page {
 
     private class TupleIterator implements Iterator<Tuple> {
         private int i = 0;
-        private HeapPage hp;
-        public TupleIterator(HeapPage hp) {
-            this.hp = hp;
-        }
         public boolean hasNext() {
             for (; i < numSlots; i++) {
-                if (hp.isSlotUsed(i)) return true;
+                if (isSlotUsed(i)) return true;
             }
             return false;
         }
         public Tuple next() {
-            Tuple t = hp.tuples[i];
+            Tuple t = tuples[i];
             i++;
-            while (i < hp.numSlots && !hp.isSlotUsed(i)) i++;
+            while (i < numSlots && !isSlotUsed(i)) i++;
             return t;
         }
     }
@@ -334,7 +330,7 @@ public class HeapPage implements Page {
      */
     public Iterator<Tuple> iterator() {
         // some code goes here
-        return new TupleIterator(this);
+        return new TupleIterator();
     }
 
 }
