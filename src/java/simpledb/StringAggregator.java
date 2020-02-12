@@ -1,11 +1,23 @@
 package simpledb;
 
+import java.util.*;
+import java.util.HashMap;
+
 /**
  * Knows how to compute some aggregate over a set of StringFields.
  */
 public class StringAggregator implements Aggregator {
 
     private static final long serialVersionUID = 1L;
+
+    private int gbField, aField;
+    private Type gbFieldType;
+    private Op what;
+
+    private HashMap<Field, Integer> results;
+    private int countNoGp = 0;
+
+    private TupleDesc td=null;
 
     /**
      * Aggregate constructor
@@ -18,6 +30,12 @@ public class StringAggregator implements Aggregator {
 
     public StringAggregator(int gbfield, Type gbfieldtype, int afield, Op what) {
         // some code goes here
+        if (what != Op.COUNT) throw new IllegalArgumentException();
+        this.gbField = gbfield;
+        this.gbFieldType = gbfieldtype;
+        this.aField = afield;
+        this.what = what;
+        this.results = new HashMap<Field, Integer>();
     }
 
     /**
@@ -26,6 +44,26 @@ public class StringAggregator implements Aggregator {
      */
     public void mergeTupleIntoGroup(Tuple tup) {
         // some code goes here
+        if (gbField == Aggregator.NO_GROUPING) {
+            countNoGp++;
+        } else {
+            Integer count = results.get(tup.getField(gbField));
+            if (count == null) {
+                results.put(tup.getField(gbField), 1);
+            } else {
+                results.put(tup.getField(gbField), count + 1);
+            }
+        }
+    }
+
+    private TupleDesc getTupleDesc() {
+        if (td != null) return td;
+        if (gbField == Aggregator.NO_GROUPING) {
+            td = new TupleDesc(new Type[]{Type.INT_TYPE});
+        } else {
+            td =  new TupleDesc(new Type[]{gbFieldType, Type.INT_TYPE});
+        }
+        return td;
     }
 
     /**
@@ -38,7 +76,43 @@ public class StringAggregator implements Aggregator {
      */
     public OpIterator iterator() {
         // some code goes here
-        throw new UnsupportedOperationException("please implement me for lab2");
+        class StringAggregatorIterator implements OpIterator {
+            boolean noGpHasNext = false;
+            Iterator<HashMap.Entry<Field, Integer>> iterator = null;
+            public boolean hasNext() {
+                if (gbField == Aggregator.NO_GROUPING) return noGpHasNext;
+                return iterator.hasNext();
+            }
+            public Tuple next() {
+                Tuple tp = new Tuple(getTupleDesc());
+                if (gbField == Aggregator.NO_GROUPING) {
+                    if (!noGpHasNext) {
+                        throw new NoSuchElementException();
+                    }
+                    tp.setField(0, new IntField(countNoGp));
+                    return tp;
+                }
+                HashMap.Entry<Field, Integer> entry = iterator.next();
+                tp.setField(0, entry.getKey());
+                tp.setField(1, new IntField(entry.getValue()));
+                return tp;
+            }
+            public void open() {
+                noGpHasNext = true;
+                iterator = results.entrySet().iterator();
+            }
+            public void close() {
+                noGpHasNext = false;
+                iterator = null;
+            }
+            public void rewind() {
+                close(); open();
+            }
+            public TupleDesc getTupleDesc() {
+                return StringAggregator.this.getTupleDesc();
+            }
+        }
+        return new StringAggregatorIterator();
     }
 
 }
