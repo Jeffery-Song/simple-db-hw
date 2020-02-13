@@ -124,9 +124,14 @@ public class HeapFile implements DbFile {
         }
         if (p == null) {
             // make new page
-            byte[] emptyData = HeapPage.createEmptyPageData();
-            Files.write(f.toPath(), emptyData, StandardOpenOption.APPEND);
-            p = new HeapPage(new HeapPageId(getId(), numPages() - 1), emptyData); // let buffer pool add it to cache
+            Files.write(f.toPath(), HeapPage.createEmptyPageData(), StandardOpenOption.APPEND);
+            HeapPageId pid = new HeapPageId(getId(), numPages() - 1);
+            // to satisfy heapfilewritetest, which do not use buffer pool to call insertTuple, 
+            // if we do not put the new page into buffer pool, the next direct call to this insertTuple 
+            // will read an empty page from disk, thus this new page is overwritten.
+            // one strange thing is that, the bufferpoolwrite test requires that the new pages shoule be put in
+            // buffer pool out side this function
+            p = (HeapPage)(Database.getBufferPool().getPage(tid, pid, Permissions.READ_WRITE));
         }
         p.insertTuple(t);
         ArrayList<Page> rst =  new ArrayList<Page>(1);
