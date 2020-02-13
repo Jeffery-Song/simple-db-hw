@@ -1,6 +1,8 @@
 package simpledb;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 /**
@@ -77,6 +79,7 @@ public class HeapFile implements DbFile {
             throw new IllegalArgumentException();
 
         int pgNo = ((HeapPageId)pid).getPageNumber();
+        if (pgNo >= numPages()) throw new IllegalArgumentException("there is " + numPages() + " pages in file, but requesting pgNo=" + pgNo);
         if (f.length() < (pgNo + 1) * BufferPool.getPageSize()) {
             throw new IllegalArgumentException();
         }
@@ -112,16 +115,35 @@ public class HeapFile implements DbFile {
     public ArrayList<Page> insertTuple(TransactionId tid, Tuple t)
             throws DbException, IOException, TransactionAbortedException {
         // some code goes here
-        return null;
         // not necessary for lab1
+        HeapPage p = null;
+        for (int i = 0; i < numPages(); i++) {
+            p = (HeapPage)(Database.getBufferPool().getPage(tid, new HeapPageId(getId(), i), Permissions.READ_WRITE));
+            if (p.getNumEmptySlots() != 0) break;
+            p = null;
+        }
+        if (p == null) {
+            // make new page
+            byte[] emptyData = HeapPage.createEmptyPageData();
+            Files.write(f.toPath(), emptyData, StandardOpenOption.APPEND);
+            p = new HeapPage(new HeapPageId(getId(), numPages() - 1), emptyData); // let buffer pool add it to cache
+        }
+        p.insertTuple(t);
+        ArrayList<Page> rst =  new ArrayList<Page>(1);
+        rst.add(0, p);
+        return rst;
     }
 
     // see DbFile.java for javadocs
     public ArrayList<Page> deleteTuple(TransactionId tid, Tuple t) throws DbException,
             TransactionAbortedException {
         // some code goes here
-        return null;
         // not necessary for lab1
+        HeapPage p = (HeapPage)(Database.getBufferPool().getPage(null, t.rid.pid, Permissions.READ_WRITE));
+        p.deleteTuple(t);
+        ArrayList<Page> rst =  new ArrayList<Page>(1);
+        rst.add(0, p);
+        return rst;
     }
 
     private class HeapFileIterator implements DbFileIterator {

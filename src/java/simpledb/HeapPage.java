@@ -23,6 +23,8 @@ public class HeapPage implements Page {
 
     byte[] oldData;
     private final Byte oldDataLock=new Byte((byte)0);
+    boolean dirty = false;
+    TransactionId dirtyTxnId = null;
 
     /**
      * Create a HeapPage from a set of bytes of data read from disk.
@@ -251,6 +253,12 @@ public class HeapPage implements Page {
     public void deleteTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+        RecordId rid = t.getRecordId();
+        if (rid == null || rid.getPageId().equals(getId()) == false) throw new DbException("");
+        if (isSlotUsed(rid.getTupleNumber()) == false) throw new DbException("");
+        markSlotUsed(rid.getTupleNumber(), false);
+        // t.setRecordId(null);
+        occupiedSlots--;
     }
 
     /**
@@ -263,6 +271,17 @@ public class HeapPage implements Page {
     public void insertTuple(Tuple t) throws DbException {
         // some code goes here
         // not necessary for lab1
+        if (getNumEmptySlots() == 0) throw new DbException("");
+        if (!t.getTupleDesc().equals(td)) throw new DbException("");
+        int i = 0;
+        for (; i < numSlots; i++) {
+            if (!isSlotUsed(i)) break;
+        }
+        assert(i != numSlots);
+        tuples[i] = t;
+        occupiedSlots++;
+        markSlotUsed(i, true);
+        t.setRecordId(new RecordId(getId(), i));
     }
 
     /**
@@ -272,6 +291,8 @@ public class HeapPage implements Page {
     public void markDirty(boolean dirty, TransactionId tid) {
         // some code goes here
         // not necessary for lab1
+        this.dirty = dirty;
+        dirtyTxnId = tid;
     }
 
     /**
@@ -280,6 +301,7 @@ public class HeapPage implements Page {
     public TransactionId isDirty() {
         // some code goes here
         // Not necessary for lab1
+        if (dirty) return dirtyTxnId;
         return null;
     }
 
@@ -307,6 +329,13 @@ public class HeapPage implements Page {
     private void markSlotUsed(int i, boolean value) {
         // some code goes here
         // not necessary for lab1
+        int idx = i >> 3;
+        int offset = i - (idx << 3);
+        if (value) {
+            header[idx] |= 1 << offset;
+        } else {
+            header[idx] &= ~(1 << offset);
+        }
     }
 
     private class TupleIterator implements Iterator<Tuple> {

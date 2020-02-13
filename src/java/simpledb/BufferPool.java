@@ -1,7 +1,7 @@
 package simpledb;
 
 import java.io.*;
-
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -147,6 +147,12 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+        ArrayList<Page> dirtyPages = Database.getCatalog().getDatabaseFile(tableId).insertTuple(tid, t);
+        for (Page p : dirtyPages) {
+            p.markDirty(true, tid);
+            getPage(tid, p.getId(), Permissions.READ_WRITE);
+            bufedPage.put(p.getId(), p);
+        }
     }
 
     /**
@@ -166,6 +172,12 @@ public class BufferPool {
         throws DbException, IOException, TransactionAbortedException {
         // some code goes here
         // not necessary for lab1
+        ArrayList<Page> dirtyPages = Database.getCatalog().getDatabaseFile(t.getRecordId().getPageId().getTableId()).deleteTuple(tid, t);
+        for (Page p : dirtyPages) {
+            p.markDirty(true, tid);
+            getPage(tid, p.getId(), Permissions.READ_WRITE);
+            bufedPage.put(p.getId(), p);
+        }
     }
 
     /**
