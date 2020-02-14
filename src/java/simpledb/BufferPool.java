@@ -2,6 +2,7 @@ package simpledb;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -77,7 +78,8 @@ public class BufferPool {
             return page;
         }
         if (bufedPage.size() == numPages) {
-            throw new DbException("Eviction is not implemented");
+            evictPage();
+            // throw new DbException("Eviction is not implemented");
         }
         page = Database.getCatalog().getDatabaseFile(pid.getTableId()).readPage(pid);
         bufedPage.put(pid, page);
@@ -188,6 +190,9 @@ public class BufferPool {
     public synchronized void flushAllPages() throws IOException {
         // some code goes here
         // not necessary for lab1
+        for (PageId pid : bufedPage.keySet()) {
+            flushPage(pid);
+        }
 
     }
 
@@ -202,6 +207,7 @@ public class BufferPool {
     public synchronized void discardPage(PageId pid) {
         // some code goes here
         // not necessary for lab1
+        bufedPage.remove(pid);
     }
 
     /**
@@ -211,6 +217,12 @@ public class BufferPool {
     private synchronized  void flushPage(PageId pid) throws IOException {
         // some code goes here
         // not necessary for lab1
+        Page p = bufedPage.get(pid);
+        if (p == null) return;
+        if (p.isDirty() == null) return;
+        DbFile file = Database.getCatalog().getDatabaseFile(pid.getTableId());
+        file.writePage(p);
+        p.markDirty(false, null);
     }
 
     /** Write all pages of the specified transaction to disk.
@@ -227,6 +239,15 @@ public class BufferPool {
     private synchronized  void evictPage() throws DbException {
         // some code goes here
         // not necessary for lab1
+        for (PageId pid : bufedPage.keySet()) {
+            try {
+                flushPage(pid);
+            } catch (IOException e) {
+                throw new DbException(e.getMessage());
+            }
+            bufedPage.remove(pid);
+            break;
+        }
     }
 
 }
