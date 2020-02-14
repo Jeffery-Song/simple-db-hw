@@ -255,9 +255,12 @@ public class HeapPage implements Page {
         // not necessary for lab1
         RecordId rid = t.getRecordId();
         if (rid == null || rid.getPageId().equals(getId()) == false) throw new DbException("");
+        if (rid.getTupleNumber() == -1) throw new DbException("");
         if (isSlotUsed(rid.getTupleNumber()) == false) throw new DbException("");
         markSlotUsed(rid.getTupleNumber(), false);
-        // t.setRecordId(null);
+        // Fix: the buffer pool write test requires that the recordid.pageid is
+        // still valid, so cannot just set rid to null.
+        t.getRecordId().tupleno = -1;
         occupiedSlots--;
     }
 
